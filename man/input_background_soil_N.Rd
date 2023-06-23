@@ -21,3 +21,6 @@ list with soil N humus and N losses
 \description{
 soil N supply from residues are the remaining N from residues after (i) mineralization at t, (ii) mineralization that will occur at t+1 and (iii) N losses
 }
+\note{
+Not used
+}

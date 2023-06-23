@@ -22,3 +22,6 @@ if N_back_before only has 1 length, it automatically assumes 0 N loss and conver
 otherwise it accepts N_back_before input (length=2)
 if timestep != 1 just receives calculated N back
 }
+\note{
+NOT USED
+}
