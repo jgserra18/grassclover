@@ -64,3 +64,23 @@ calculate_max_yield_DM_grassclover = function(df_obs) {
 
   return(Ymax)
 }
+
+
+#' apply_max_yield_threshold
+#'
+#' @param df_obs dataframe of site-specific observations
+#' @param threshold max yield threshold fraction
+#' @description
+#' Estimates the N fertiliser limit based on the threshold percentage applied to the max yield DM
+#' @return
+#' @export
+#' @unit kg N ha-1 yr-1
+#' @examples
+apply_max_yield_threshold = function(df_obs,
+                                     threshold=0.7) {
+
+
+  quadratic_func = lm(df_obs$value[df_obs$variable=="Total_yield_dm"]~poly(df_obs$N_fert[df_obs$variable=="Total_yield_dm"],2,raw = T))
+  fert_lim = approx(x = quadratic_func$fitted.values, y = seq(0,600,100), xout = threshold*yield_dm_max)$y
+  return(fert_lim)
+}

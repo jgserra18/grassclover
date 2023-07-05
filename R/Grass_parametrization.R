@@ -25,7 +25,6 @@ grass_simulation_metrics = function(site_name,
                                     df_obs_partition,
                                     yield_dm_max,
                                     param_file,
-                                    alpha,
                                     N_back=NULL,
                                     N_res_avail_t1 = NULL) {
 
@@ -38,7 +37,7 @@ grass_simulation_metrics = function(site_name,
   }
   if (missing(N_back)==T) { N_back = NY0 * f_partitions$f_Nback } else { N_back = N_back }
   #N_back = ifelse(year==1, 1.4*df_obs$value[df_obs$Yield=="Nyield"], df_obs_Nback$value[df_obs_Nback$Yield=="Nyield"&df_obs_Nback$variable==0]) # update N back based on whether it is the first year or not
-  grass_loop = grass_only_simulation(N_fert = N_fert, yield_dm_max = yield_dm_max, f_min_t = f_min_t, param_file = param_file, N_back_before = N_back, N_res_avail_t1 = N_res_avail_t1, alpha = alpha)
+  grass_loop = grass_only_simulation(N_fert = N_fert, yield_dm_max = yield_dm_max, f_min_t = f_min_t, param_file = param_file, N_back_before = N_back, N_res_avail_t1 = N_res_avail_t1)
 
   sim_Nyield = grass_loop[['N_yield']]
   sim_dm_yield = grass_loop[['yield_dm']]
@@ -59,7 +58,7 @@ grass_simulation_metrics = function(site_name,
     N_res_avail_t1 = grass_loop$N_res_avail_t1,
     eval_Nyield = eval_Nyield,
     eval_dm_yield = eval_dm_yield,
-    alpha = alpha,
+    #alpha = alpha,
     eval_sum = eval_Nyield+eval_dm_yield))
 }
 
@@ -94,24 +93,46 @@ grass_simulation_per_site = function(site_name = 'Leeds',
       obs_Nback = subset(S23,Site==site_name&Year==yrs[1]& variable==N_fert[1])
       obs_dm_max =subset(S23,Site==site_name&Year==yrs[i])
       yield_dm_max = calculate_max_yield_DM(df_obs =obs_dm_max)
-      new_param_dist = param_dist
 
-      alpha = runif(100, 0.1,0.9)
+      N_fert_lim = apply_max_yield_threshold(df_obs = df_obs, threshold = 0.7)
 
-      # store simulations in list----
-      ## calculates Normalised Root Mean Square Error for N yield and yield DM
-      store_sim = lapply(1:nrow(param_dist), function(x) {
-        grass_simulation_metrics(N_fert = N_fert[fert], site_name = site_name, year = i, f_min_t = param_dist[x,1], df_obs = obs, df_obs_partition = obs_Nback, yield_dm_max = yield_dm_max, N_res_avail_t1 = new_store_N_res_avail_t1, param_file = param_file, alpha = alpha[x])
-      })
-      d =data.table::rbindlist(store_sim)
-      d$id = new_param_dist$min_t
-      View(d)
+      if (N_fert_lim<N_fert[fert]) {
+        next
+      }
+      else {
+        # store simulations in list----
+        ## optimization ----
+        wrapper = function(params, ...) {
+          f_min_t = params[1]
+          return(grass_simulation_metrics(f_min_t = f_min_t, ...)[['eval_Nyield']])
+        }
 
-      # find simulation with the lowest RMSE (N yield + Yield) ----
-      ## Get stored info for that simulation
-      ## Populate param list
-      id = which.min(sapply(store_sim, function(x) x[['eval_Nyield']]))
-      optm_sim = store_sim[[id]]
+        store_sim = DEoptim::DEoptim(fn = wrapper, lower = c(0), upper = c(1),
+                         N_fert=N_fert[fert],
+                         site_name=x,
+                         year=i,
+                         df_obs=obs,
+                         df_obs_partition = obs_Nback,
+                         yield_dm_max = yield_dm_max,
+                         N_res_avail_t1 = new_store_N_res_avail_t1,
+                         param_file = param_file,
+                         control = DEoptim.control(itermax = 100, parallelType = 1, reltol = 0.01))
+
+        ## calculates Normalised Root Mean Square Error for N yield and yield DM
+        # store_sim = lapply(1:nrow(param_dist), function(x) {
+        #   grass_simulation_metrics(N_fert = N_fert[fert], site_name = site_name, year = i, f_min_t = param_dist[x,1], df_obs = obs, df_obs_partition = obs_Nback, yield_dm_max = yield_dm_max, N_res_avail_t1 = new_store_N_res_avail_t1, param_file = param_file, alpha = alpha[x])
+        # })
+
+        # find simulation with the lowest RMSE (N yield + Yield) ----
+        ## Get stored info for that simulation
+        ## Populate param list
+        #id = which.min(sapply(store_sim, function(x) x[['eval_Nyield']]))
+        #optm_sim = store_sim[[id]]
+
+        optim_params = store_sim$optim$bestmem
+        f_min_t =  optim_params[1]
+      }
+
       min_df = cbind(new_param_dist[id,], data.frame(optm_sim))
       min_df$Nfert = N_fert[fert]; min_df$year = yrs[i]; min_df$site = site_name
       store_N_res_avail_t1[i] = min_df[1,'N_res_avail_t1'] # update N min t1

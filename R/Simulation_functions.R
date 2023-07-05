@@ -79,7 +79,6 @@ grass_only_simulation = function(yield_dm_max = 12000,
                                  N_fert = 100,
                                  f_min_t = 0.6,
                                  param_file,
-                                 alpha,
                                  N_back_before=NULL,
                                  N_res_avail_t1=NULL) {
 
@@ -105,8 +104,8 @@ grass_only_simulation = function(yield_dm_max = 12000,
     N_in_aboveground = N_yield_soil_aboveground(N_yield = n_yield, f_harvested = param_file$f_harvested)
 
     ## N from residues below ground ----
-  #  f_shoots = shoot_fraction_fitted(f_n = f_n)
-    f_shoots = alpha
+    f_shoots = shoot_fraction_fitted(f_n = f_n)
+  #  f_shoots = alpha
     f_n_roots = N_concentration_roots_fitted(f_n = f_n*100) # %N
     N_in_belowground = N_input_roots(yield_dm = yield_dm, f_shoot = f_shoots, f_n_roots = f_n_roots/100)
     yield_belowground = belowground_yield_DM(yield_dm = yield_dm, f_shoot = f_shoots)
