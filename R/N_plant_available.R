@@ -2,31 +2,28 @@
 
 #' input_Nfertiliser
 #'
-#' @param N_fert
-#' @param ef_ammonia
-#'
+#' @param N_fertN fertiliser input (kg N ha-1 yr-1)
+#' @param param_file set_parameters file
+#' @description
+#' computes effecive N from fertilisers
+#' excludes N-NH3 emissions
+#' @unit kg N ha-1 yr-1
 #' @returns listh with effective N input and N-NH3 losses
 #' @export
 #'
 #' @examples
 input_Nfertiliser = function(N_fert,
-                             ef_ammonia) {
+                             param_file) {
 
-  #' @param N_fert N fertiliser input (kg N ha-1 yr-1)
-  #' @param ef_ammonia % N-NH3 losses (0-1) (??)
-  #' @description
-    #' computes effecive N from fertilisers
-    #' excludes N-NH3 emissions
-    #' @unit kg N ha-1 yr-1
-
-  N_eff_fert = N_fert*(1-ef_ammonia)
-  NH3 = N_fert*ef_ammonia
+  N_eff_fert = N_fert*(1-param_file$ef_ammonia)
+  NH3 = N_fert*param_file$ef_ammonia
 
   return(list(
     N_eff_fert = N_eff_fert,
     NH3_fert = NH3
   ))
 }
+
 
 
 #' input_mineralization_same_year
@@ -52,7 +49,7 @@ input_mineralization_same_year = function(f_min_t,
 
 #' input_mineralization_following_year
 #'
-#' @param ef_loss % leaching+denitrification losses (0-1) (??)
+#' @param param_file set_parameters file
 #' @param f_min_t  fraction of residues mineralized in the same growing period (0-1) (??g)
 #' @param N_residues_t N residues input at year t (kg N ha-1 yr-1)
 #' @param f_min_t1  fraction of residues mineralized in the next year (0-1) (??g)
@@ -65,16 +62,16 @@ input_mineralization_same_year = function(f_min_t,
 #' @returns list with min for the following year and N losses
 #' @export
 #' NOT USED
-input_mineralization_following_year = function(ef_loss,
-                                               f_min_t,
+input_mineralization_following_year = function(f_min_t,
                                                f_min_t1,
-                                               N_residues_t) {#,
+                                               N_residues_t,
+                                               param_file) {#,
                                               # t=1) {
 
   #N_min_t1 = ifelse(t==1, 0, (1-ef_loss)*(f_min_t1*(1-f_min_t)*N_residues_t))
   #N_loss = ifelse(t==1, 0, ef_loss*(f_min_t1*(1-f_min_t)*N_residues_t))
-  N_min_t1 = (1-ef_loss)*(f_min_t1*(1-f_min_t)*N_residues_t)
-  N_loss = ef_loss*(f_min_t1*(1-f_min_t)*N_residues_t)
+  N_min_t1 = (1-param_file$ef_loss)*(f_min_t1*(1-f_min_t)*N_residues_t)
+  N_loss = param_file$ef_loss*(f_min_t1*(1-f_min_t)*N_residues_t)
 
   return(list(
     N_min_t1=N_min_t1,
@@ -84,7 +81,7 @@ input_mineralization_following_year = function(ef_loss,
 
 #' input_background_soil_N
 #'
-#' @param ef_loss % leaching+denitrification losses (0-1) (??)
+#' @param param_file set_parameters file
 #' @param N_residues_t N residues input at year t (kg N ha-1 yr-1)
 #' @param N_min_t  mineralization from residues during the same growing period at year t (kg N ha-1 yr-1); see input_mineralization_same_year()
 #' @param N_min_t1 N mineralization from residues that will occur next yea (kg N ha-1 yr-1); see input_mineralization_following_year()
@@ -95,13 +92,13 @@ input_mineralization_following_year = function(ef_loss,
 #' @export
 #' @note
 #' Not used
-input_background_soil_N = function(ef_loss,
-                                   N_residues_t,
+input_background_soil_N = function(N_residues_t,
                                    N_min_t,
-                                   N_min_t1) {
+                                   N_min_t1,
+                                   param_file) {
 
-  Nback = (1-ef_loss)*(N_residues_t-N_min_t-N_min_t1)
-  N_loss = ef_loss*(N_residues_t-N_min_t-N_min_t1)
+  Nback = (1-param_file$ef_loss)*(N_residues_t-N_min_t-N_min_t1)
+  N_loss = param_file$ef_loss*(N_residues_t-N_min_t-N_min_t1)
   return(list(
     Nback=Nback,
     N_loss = N_loss
@@ -147,9 +144,9 @@ background_soil_N_modifier = function(N_back_before,
 #' @return
 #' @export
 plant_N_avaible_NOTUSED = function(N_eff_fert,
-                           N_min_t,
-                           N_min_t1,
-                           N_back) {
+                                 N_min_t,
+                                 N_min_t1,
+                                 N_back) {
 
   N_available = N_eff_fert  + N_min_t + N_min_t1 + N_back
   return(N_available)
@@ -172,10 +169,11 @@ plant_N_avaible_NOTUSED = function(N_eff_fert,
 plant_N_available = function(N_eff_fert,
                              N_res_avail_t,
                              N_res_avail_t1,
-                             N_back) {
+                             N_back,
+                             param_file) {
 
-  N_avail = N_eff_fert + N_res_avail_t + (1 - set_parameters$ef_loss) * (N_res_avail_t1 + N_back)
-  N_loss = set_parameters$ef_loss * (N_res_avail_t1 + N_back)
+  N_avail = N_eff_fert + N_res_avail_t + (1 - param_file$ef_loss) * (N_res_avail_t1 + N_back)
+  N_loss = param_file$ef_loss * (N_res_avail_t1 + N_back)
 
   return(list(
     plant_N_avail = N_avail,

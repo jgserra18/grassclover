@@ -51,7 +51,7 @@ N_residues_availability_current_year = function(f_min_t,
 #' @examples
 N_residues_availability_next_year = function(f_min_t,
                                              N_res_total,
-                                             N_humus_t1) {
+                                             N_humus_t) {
 
   N_res_avail_t1 = (1-f_min_t) * N_res_total - N_humus_t
   return(N_res_avail_t1)

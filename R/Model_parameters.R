@@ -8,5 +8,6 @@ set_parameters = list(
   f_Navail=0.5, # Proportion of available N  +  fixed N recovered in clover yield (alpha_c) (0-1)
   over_yielding_factor=0.5, # Displacement rate of clover by grass (0-1) (epsilon)
   yield_clover_max = 6000, # maximum clover yield in monoculture (kg DM ha-1 yr-1)
-  f_n_clover = 0.04 # Concentration of N in clover dry matter (kg N kg DM-1)
+  f_n_clover = 0.04, # Concentration of N in clover dry matter (kg N kg DM-1)
+  f_harvested = 0.8
 )
